@@ -45,14 +45,64 @@ class User(BaseModel):
     password: str = Field(description="user password", min_length=3, max_length=50)
 
 
-class UserResponse(BaseModel):
-    name: str
-    email: str
+# class UserResponse(BaseModel):
+#     name: str
+#     email: str
 
-@app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(user: User):
-    if user.name == "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin is not allowed to register")  
+# @app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+# async def create_user(user: User):
+#     if user.name == "admin":
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin is not allowed to register")  
+#     return user
+
+
+# @app.post("/root/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+# async def create_user(user: User):
+#     if user.name == "admin":
+#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin is not allowed to register")  
+#     return user
+
+
+#sql relational databases 
+from fastapi import Depends
+from sqlmodel import SQLModel, Field, create_engine, Session, select
+from typing import Annotated
+
+
+#create a model and connect it to the database
+class User(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    username: str = Field(index=True)
+    email: str 
+    password: str = Field(min_length=3, max_length=50)
+
+
+sqlite_file_name = "mydatabase.sqlite"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+connect_args = {"check_same_thread": False}
+
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]        
+
+#just for development
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+@app.post("/create-user/")
+def create_user(user: User, session: SessionDep):
+    session.add(user)
+    session.commit()
+    session.refresh(user)
     return user
-
-
