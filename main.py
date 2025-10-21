@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Path, Query, status, HTTPException
 from pydantic import BaseModel, Field
+from models import User
+from datebase import create_db_and_tables,  SessionDep
 app = FastAPI()
 
 @app.get("/")
@@ -38,11 +40,11 @@ async def create_item(item: Item):
  
 
 # path parameters and validation
-class User(BaseModel):
-    name: str
-    age: int = Field(description="user age is between 0-100", ge=0, le=100)
-    email: str = Field(description="user email", min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-    password: str = Field(description="user password", min_length=3, max_length=50)
+# class User(BaseModel):
+#     name: str
+#     age: int = Field(description="user age is between 0-100", ge=0, le=100)
+#     email: str = Field(description="user email", min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+#     password: str = Field(description="user password", min_length=3, max_length=50)
 
 
 # class UserResponse(BaseModel):
@@ -64,41 +66,36 @@ class User(BaseModel):
 
 
 #sql relational databases 
-from fastapi import Depends
-from sqlmodel import SQLModel, Field, create_engine, Session, select
-from typing import Annotated
+# from fastapi import Depends
+# from sqlmodel import SQLModel, Field, create_engine, Session, select
+# from typing import Annotated
 
 
-#create a model and connect it to the database
-class User(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    username: str = Field(index=True)
-    email: str 
-    password: str = Field(min_length=3, max_length=50)
 
 
-sqlite_file_name = "mydatabase.sqlite"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-connect_args = {"check_same_thread": False}
 
-engine = create_engine(sqlite_url, connect_args=connect_args)
+# sqlite_file_name = "mydatabase.sqlite"
+# sqlite_url = f"sqlite:///{sqlite_file_name}"
+# connect_args = {"check_same_thread": False}
 
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+# engine = create_engine(sqlite_url, connect_args=connect_args)
 
 
-def get_session():
-    with Session(engine) as session:
-        yield session
+# def create_db_and_tables():
+#     SQLModel.metadata.create_all(engine)
 
 
-SessionDep = Annotated[Session, Depends(get_session)]        
+# def get_session():
+#     with Session(engine) as session:
+#         yield session
+
+
+# SessionDep = Annotated[Session, Depends(get_session)]        
 
 #just for development
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
+# @app.on_event("startup")
+# def on_startup():
+#     create_db_and_tables()
 
 @app.post("/create-user/")
 def create_user(user: User, session: SessionDep):
